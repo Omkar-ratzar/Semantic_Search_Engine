@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import json
+import docx2txt
 
 ##DOCUMENT CHUNKING
 import os
@@ -11,6 +12,10 @@ EMB_PATH = "embeddings.npy"
 META_PATH = "chunks.json"
 
 
+#for docx
+def extract_docx(path):
+    text = docx2txt.process(path)
+    return (" ".join(text.split()))
 
 #for pdfs
 def extract_pdf(path):
@@ -64,7 +69,7 @@ def build_pipeline():
                 continue
 
             name = e.name.lower()
-            if not (name.endswith('.pdf') or name.endswith('.txt') or name.endswith('.pptx')):
+            if not (name.endswith('.pdf') or name.endswith('.txt') or name.endswith('.pptx') or name.endswith('.docx')):
                 continue
             print("Processing:", e.name)
             text = None
@@ -75,6 +80,8 @@ def build_pipeline():
                     text = f.read().strip()
             elif name.endswith('.pptx'):
                 text = extract_pptx(e.path)
+            elif name.endswith('.docx'):
+                text = extract_docx(e.path)
             if not text or not text.strip():
                 continue
             doc_id += 1
@@ -93,7 +100,7 @@ def build_pipeline():
     model = SentenceTransformer('BAAI/bge-small-en-v1.5',device="cuda")
     doc_embeddings = model.encode(
         texts,
-        batch_size=32,        
+        batch_size=32,
         show_progress_bar=True
     )
     doc_embeddings = doc_embeddings / np.linalg.norm(doc_embeddings, axis=1, keepdims=True)
