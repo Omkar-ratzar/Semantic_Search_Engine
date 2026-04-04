@@ -2,7 +2,9 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import json
 import docx2txt
-
+from db_connection import mark_processing,mark_processed,get_file_id_by_path,get_image_text_for_embedding
+from image_desc import extract_image
+from image_exif import extract_exif
 ##DOCUMENT CHUNKING
 import os
 import fitz  # PyMuPDF
@@ -12,9 +14,23 @@ EMB_PATH = "embeddings.npy"
 META_PATH = "chunks.json"
 
 
+def normalize_path(path):
+    return os.path.abspath(path)
+
+#for images
+def extract_img(path):
+    path=normalize_path(path)
+    description_text=str(extract_image(path))
+    exif_text=str(extract_exif(path))
+    mark_processed(normalize_path(path))
+    return "IMAGE DESCRIPTION:"+description_text+"\n"+"IMAGE_METADATA:"+exif_text
+
+
+
 #for docx
 def extract_docx(path):
     text = docx2txt.process(path)
+    mark_processed(normalize_path(path))
     return (" ".join(text.split()))
 
 #for pdfs
@@ -23,10 +39,8 @@ def extract_pdf(path):
     text = ""
     for page in doc:
         text += page.get_text()
+    mark_processed(normalize_path(path))
     return text
-
-
-
 
 #for pptz
 def extract_pptx(path):
@@ -39,6 +53,7 @@ def extract_pptx(path):
                     content = para.text.strip()
                     if content:
                         text.append(f"[Slide {slide_num+1}] {content}")
+    mark_processed(normalize_path(path))
     return "\n".join(text)
 
 
@@ -69,19 +84,23 @@ def build_pipeline():
                 continue
 
             name = e.name.lower()
-            if not (name.endswith('.pdf') or name.endswith('.txt') or name.endswith('.pptx') or name.endswith('.docx')):
+            if not (name.endswith('.pdf') or name.endswith('.txt') or name.endswith('.pptx') or name.endswith('.docx') or name.endswith('.jpg') or name.endswith('.jpeg') or name.endswith('.png') ):
                 continue
-            print("Processing:", e.name)
+            print("Processing:", e.name, e.path)
+            mark_processing(normalize_path(e.path))
             text = None
             if name.endswith('.pdf'):
                 text = extract_pdf(e.path)
             elif name.endswith('.txt'):
                 with open(e.path, encoding='utf-8') as f:
                     text = f.read().strip()
+                    mark_processed(normalize_path(e.path))
             elif name.endswith('.pptx'):
                 text = extract_pptx(e.path)
             elif name.endswith('.docx'):
                 text = extract_docx(e.path)
+            elif (name.endswith('.jpg') or name.endswith('.jpeg') or name.endswith('.png') ):
+                text=extract_img(e.path)
             if not text or not text.strip():
                 continue
             doc_id += 1
@@ -123,7 +142,7 @@ def load_pipeline():
     with open(META_PATH, "r", encoding="utf-8") as f:
         chunker = json.load(f)
 
-    model = SentenceTransformer('all-MiniLM-L6-v2', device="cuda")
+    model = SentenceTransformer('BAAI/bge-small-en-v1.5', device="cuda")
 
     return model, embeddings, chunker
 
