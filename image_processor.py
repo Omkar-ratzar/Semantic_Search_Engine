@@ -18,6 +18,7 @@ def process_batch():
 
         upsert_image_metadata(f["file_id"],f["file_path"], desc, exif)
         mark_processed(f["file_id"])
+        print("Processed:",f["file_id"])
 
 
 
