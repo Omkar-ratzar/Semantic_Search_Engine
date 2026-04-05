@@ -20,10 +20,12 @@ def normalize_path(path):
 #for images
 def extract_img(path):
     path=normalize_path(path)
-    description_text=str(extract_image(path))
-    exif_text=str(extract_exif(path))
-    mark_processed(normalize_path(path))
-    return "IMAGE DESCRIPTION:"+description_text+"\n"+"IMAGE_METADATA:"+exif_text
+    # description_text=str(extract_image(path))
+    # exif_text=str(extract_exif(path))
+    text=get_image_text_for_embedding(get_file_id_by_path(path))
+    mark_processed(path)
+    print(text)
+    return text
 
 
 
@@ -221,11 +223,11 @@ if __name__ == "__main__":
         model, embeddings, chunker = load_pipeline()
     else:
         model, embeddings, chunker = build_pipeline()
+    while(True):
+        query=input()
+        results = search_docs(query, model, embeddings, chunker)
 
-    query=input()
-    results = search_docs(query, model, embeddings, chunker)
-
-    print("\nResults:")
-    for r in results:
-        print(r)
-        print()
+        print("\nResults:")
+        for r in results:
+            print(r)
+            print()

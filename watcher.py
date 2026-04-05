@@ -2,7 +2,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import time
 import os
-from db_connection import upsert_file, mark_modified, mark_deleted, move_file, mark_renamed
+from db_connection import upsert_file, mark_modified, mark_deleted, move_file, mark_renamed,get_file_id_by_path,upsert_image_metadata
 
 def normalize_path(path):
     return os.path.abspath(path)
@@ -30,7 +30,9 @@ class MyHandler(FileSystemEventHandler):
         path = normalize_path(path)
         print("File added: "+path)
         upsert_file(path)
-        
+        if path.lower().endswith((".jpg", ".jpeg", ".png")):
+            file_id = get_file_id_by_path(path)
+            upsert_image_metadata(file_id, path, None, None, status="NEW")
 
 
     def handle_modified(self, path):
