@@ -6,8 +6,13 @@ from db_connection import get_new_images
 from db_connection import upsert_image_metadata
 import time
 from log import logger
+from config import config
+
+image_batch_limit = config["batch"]["image_processing_batch_size"]
+
+
 def process_batch():
-    files = get_new_images(limit=10)
+    files = get_new_images(limit=image_batch_limit)
 
     for f in files:
         mark_processing(f["file_id"])

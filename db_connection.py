@@ -3,8 +3,9 @@ from datetime import datetime
 import json
 import time
 from log import logger
-
-MAX_RETRIES = 3
+from config import config
+MAX_RETRIES = config["processing"]["max_retries"]
+# MAX_RETRIES = 3
 
 def upsert_file(path):
     for attempt in range(MAX_RETRIES):

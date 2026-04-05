@@ -1,12 +1,13 @@
 import ollama
 from log import logger
+from config import config
 def extract_image(path):
 
     response = ollama.chat(
-    model='minicpm-v',
+    model= config["model"]["image_llm"],
     options={
-        "temperature": 0,
-        "top_p": 0.3
+        "temperature": config["llm"]["temperature"],
+        "top_p": config["llm"]["top_p"]
     },
 
     messages=[

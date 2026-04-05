@@ -4,6 +4,9 @@ import time
 import os
 from db_connection import upsert_file, mark_modified, mark_deleted, move_file, mark_renamed,get_file_id_by_path,upsert_image_metadata
 from log import logger
+from config import config
+
+watcher_path=config["paths"]["watcher"]
 
 def normalize_path(path):
     return os.path.abspath(path)
@@ -86,4 +89,4 @@ def start_watcher(path="."):
     observer.join()
 
 if __name__ == "__main__":
-    start_watcher("./data")
+    start_watcher(watcher_path)

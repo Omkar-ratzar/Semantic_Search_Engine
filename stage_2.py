@@ -6,14 +6,24 @@ from db_connection import mark_processing,mark_processed,get_file_id_by_path,get
 # from image_desc import extract_image
 # from image_exif import extract_exif
 from log import logger
-
-##DOCUMENT CHUNKING
+from config import config
 import os
 import fitz  # PyMuPDF
 from pptx import Presentation
-path="data"
-EMB_PATH = "embeddings.npy"
-META_PATH = "chunks.json"
+
+
+
+path=config["paths"]["data"]
+EMB_PATH = config["paths"]["embeddings"]
+META_PATH = config["paths"]["chunks"]
+transformer_model=config["model"]["embedding"]
+transformer_device=config["device"]["type"]
+embedding_batch_size=config["batch"]["embedding_batch_size"]
+chunk_size=config["chunking"]["chunk_size"]
+chunk_overlap=config["chunking"]["overlap"]
+show_progress=config["embedding"]["show_progress"]
+retrieve_queries=config["search"]["retrieve_queries"]
+
 
 
 def normalize_path(path):
@@ -68,7 +78,7 @@ def extract_pptx(path):
 
 
 #word based chonking
-def chunk_text(text, chunk_size=400, overlap=100):
+def chunk_text(text, chunk_size, overlap):
     words = text.split()
     chunks = []
     step = chunk_size - overlap
@@ -113,7 +123,7 @@ def build_pipeline():
             if not text or not text.strip():
                 continue
             doc_id += 1
-            chunks = chunk_text(text)
+            chunks = chunk_text(text,chunk_size,chunk_overlap)
             for i, c in enumerate(chunks):
                 chunker.append({
                     "doc_id": doc_id,
@@ -125,11 +135,11 @@ def build_pipeline():
     print("Total docs:", doc_id)
     print("Total chunks:", len(chunker))
     texts = [c["text"] for c in chunker]
-    model = SentenceTransformer('BAAI/bge-small-en-v1.5',device="cuda")
+    model = SentenceTransformer(transformer_model,device=transformer_device)
     doc_embeddings = model.encode(
         texts,
-        batch_size=32,
-        show_progress_bar=True
+        batch_size=embedding_batch_size,
+        show_progress_bar=show_progress
     )
     doc_embeddings = doc_embeddings / np.linalg.norm(doc_embeddings, axis=1, keepdims=True)
 
@@ -151,7 +161,7 @@ def load_pipeline():
     with open(META_PATH, "r", encoding="utf-8") as f:
         chunker = json.load(f)
 
-    model = SentenceTransformer('BAAI/bge-small-en-v1.5', device="cuda")
+    model = SentenceTransformer(transformer_model, device=transformer_device)
 
     return model, embeddings, chunker
 
@@ -160,7 +170,7 @@ def load_pipeline():
 
 # Search function based on chunks
 def search(query, model, embeddings, chunker, top_k=5):
-    q = model.encode([query])[0]
+    q = model.encode([query],show_progress_bar=False)[0]
     q = q / np.linalg.norm(q)
 
     scores = embeddings @ q
@@ -177,9 +187,9 @@ def search(query, model, embeddings, chunker, top_k=5):
     return results
 
 #search function based on docs
-def search_docs(query, model, embeddings, chunker, top_k=5):
+def search_docs(query, model, embeddings, chunker, top_k):
     # Embed query
-    q = model.encode([query])[0]
+    q = model.encode([query],show_progress_bar=False)[0]
     q = q / np.linalg.norm(q)
 
     # Compute similarity
@@ -235,7 +245,7 @@ if __name__ == "__main__":
         query=input("\nEnter your query. Type E to exit\n")
         if(query=="E"):
             break
-        results = search_docs(query, model, embeddings, chunker)
+        results = search_docs(query, model, embeddings, chunker,retrieve_queries)
 
         print("\nResults:")
         for r in results:
