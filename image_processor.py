@@ -5,7 +5,7 @@ from db_connection import mark_processed_metadata as mark_processed
 from db_connection import get_new_images
 from db_connection import upsert_image_metadata
 import time
-
+from log import logger
 def process_batch():
     files = get_new_images(limit=10)
 
@@ -13,6 +13,7 @@ def process_batch():
         mark_processing(f["file_id"])
 
     for f in files:
+        logger.info("Image is being processed:",f["file_path"])
         desc = extract_image(f["file_path"])
         exif = extract_exif(f["file_path"])
 

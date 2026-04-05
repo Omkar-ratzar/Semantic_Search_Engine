@@ -3,8 +3,10 @@ import numpy as np
 import json
 import docx2txt
 from db_connection import mark_processing,mark_processed,get_file_id_by_path,get_image_text_for_embedding
-from image_desc import extract_image
-from image_exif import extract_exif
+# from image_desc import extract_image
+# from image_exif import extract_exif
+from log import logger
+
 ##DOCUMENT CHUNKING
 import os
 import fitz  # PyMuPDF
@@ -25,6 +27,7 @@ def extract_img(path):
     text=get_image_text_for_embedding(get_file_id_by_path(path))
     mark_processed(path)
     print(text)
+    logger.info("Image has been extracted. Path:"+path)
     return text
 
 
@@ -33,6 +36,7 @@ def extract_img(path):
 def extract_docx(path):
     text = docx2txt.process(path)
     mark_processed(normalize_path(path))
+    logger.info("Docx has been extracted. Path:"+path)
     return (" ".join(text.split()))
 
 #for pdfs
@@ -42,6 +46,7 @@ def extract_pdf(path):
     for page in doc:
         text += page.get_text()
     mark_processed(normalize_path(path))
+    logger.info("PDF has been extracted. Path:"+path)
     return text
 
 #for pptz
@@ -56,6 +61,7 @@ def extract_pptx(path):
                     if content:
                         text.append(f"[Slide {slide_num+1}] {content}")
     mark_processed(normalize_path(path))
+    logger.info("PPTX has been extracted. Path:"+path)
     return "\n".join(text)
 
 
@@ -77,6 +83,7 @@ def chunk_text(text, chunk_size=400, overlap=100):
 
 #building the pipeline
 def build_pipeline():
+    logger.info("Building the pipeline")
     doc_id = 0
     chunker = []
 
@@ -138,7 +145,7 @@ def build_pipeline():
 
 def load_pipeline():
     print("Loading cached data...")
-
+    logger.info("Loading saved embeddings")
     embeddings = np.load(EMB_PATH)
 
     with open(META_PATH, "r", encoding="utf-8") as f:
@@ -166,7 +173,7 @@ def search(query, model, embeddings, chunker, top_k=5):
             "score": float(scores[i]),
             "text": chunker[i]["text"][:200]
             })
-
+    logger.info("Chunk search successful. Query:"+query)
     return results
 
 #search function based on docs
@@ -204,6 +211,7 @@ def search_docs(query, model, embeddings, chunker, top_k=5):
             # "snippet": chunker[idx]["text"][:]
         })
 
+    logger.info("File search successful. Query:"+query)
     return results
 
 
@@ -218,13 +226,15 @@ def search_docs(query, model, embeddings, chunker, top_k=5):
 # print(doc_embeddings.shape)
 # print(np.linalg.norm(doc_embeddings[0]))
 if __name__ == "__main__":
-
+    logger.info("Main file started")
     if os.path.exists(EMB_PATH) and os.path.exists(META_PATH):
         model, embeddings, chunker = load_pipeline()
     else:
         model, embeddings, chunker = build_pipeline()
     while(True):
-        query=input()
+        query=input("\nEnter your query. Type E to exit\n")
+        if(query=="E"):
+            break
         results = search_docs(query, model, embeddings, chunker)
 
         print("\nResults:")

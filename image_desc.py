@@ -1,5 +1,5 @@
 import ollama
-
+from log import logger
 def extract_image(path):
 
     response = ollama.chat(
@@ -57,7 +57,7 @@ def extract_image(path):
         """,
             'images': [path]
         }])
-
+    logger.info("Image described:"+path)
     return(response['message']['content'])
 
 # print(extract_image("C:\\Users\\Fylakas\\Pictures\\test.jpg"))

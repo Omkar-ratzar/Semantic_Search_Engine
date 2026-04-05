@@ -119,7 +119,7 @@ def mark_processed(path):
     cursor.close()
     conn.close()
 
-def upsert_image_metadata(file_id, file_path, description, exif_dict, status="PROCESSED"):
+def upsert_image_metadata(file_id, file_path, description, exif_dict, status="NEW"):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -234,3 +234,4 @@ def mark_processed_metadata(file_id):
     conn.commit()
     cursor.close()
     conn.close()
+

@@ -3,6 +3,7 @@ from watchdog.events import FileSystemEventHandler
 import time
 import os
 from db_connection import upsert_file, mark_modified, mark_deleted, move_file, mark_renamed,get_file_id_by_path,upsert_image_metadata
+from log import logger
 
 def normalize_path(path):
     return os.path.abspath(path)
@@ -27,6 +28,7 @@ class MyHandler(FileSystemEventHandler):
 
     # ---- Your logic goes here ----
     def handle_created(self, path):
+        logger.info("File added: "+path)
         path = normalize_path(path)
         print("File added: "+path)
         upsert_file(path)
@@ -37,24 +39,34 @@ class MyHandler(FileSystemEventHandler):
 
     def handle_modified(self, path):
         path = normalize_path(path)
+        logger.info("File modified: "+path)
         print("File modified: "+path)
         mark_modified(path)
+        if path.lower().endswith((".jpg", ".jpeg", ".png")):
+            file_id = get_file_id_by_path(path)
+            upsert_image_metadata(file_id, path, None, None, status="NEW")
 
 
     def handle_deleted(self, path):
         path = normalize_path(path)
+        logger.info("File deleted: "+path)
         print("File deleted: "+path)
         mark_deleted(path)
-        pass
+        if path.lower().endswith((".jpg", ".jpeg", ".png")):
+            file_id = get_file_id_by_path(path)
+            if(file_id):
+                upsert_image_metadata(file_id, path, None, None, status="DELETED")
 
     def handle_moved(self, src_path, dest_path):
         src_path = normalize_path(src_path)
         dest_path = normalize_path(dest_path)
         if os.path.dirname(src_path) == os.path.dirname(dest_path):
             mark_renamed(src_path,dest_path)
+            logger.info("File renamed: "+dest_path)
             print("File renamed: "+dest_path)
         else:
             move_file(src_path, dest_path)
+            logger.info("File moved elsewhere: "+dest_path)
             print("File moved elsewhere: "+dest_path)
 
 
@@ -64,6 +76,7 @@ def start_watcher(path="."):
     observer.schedule(event_handler, path=path, recursive=False)
     observer.start()
     print(f"Watching directory: {path}")
+    logger.info("Started watcher in:"+(path))
     try:
         while True:
             time.sleep(1)
