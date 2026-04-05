@@ -1,4 +1,4 @@
-# Semantic Search Engine
+# Gnosis
 
 ## Overview
 This project is a lightweight semantic search engine designed to work on unstructured data stored in blob-like storage systems (local folders in the current setup). Instead of relying on keyword matching, it understands the meaning of content and retrieves relevant results based on intent.
