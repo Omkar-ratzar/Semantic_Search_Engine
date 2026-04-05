@@ -6,3 +6,4 @@ data/
 *.docx
 *.log
 *.env
+db_connection_old.py
