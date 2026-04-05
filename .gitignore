@@ -1,6 +1,6 @@
 *.pdf
 *.pptx
-*.txt
+data/
 *.json
 *.npy
 *.docx
@@ -8,3 +8,5 @@
 *.png
 *.jpeg
 *.webp
+*.log
+*.env
