@@ -4,9 +4,5 @@ data/
 *.json
 *.npy
 *.docx
-*.jpg
-*.png
-*.jpeg
-*.webp
 *.log
 *.env
