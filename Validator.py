@@ -2,6 +2,8 @@ import magic
 import os
 from error_decorator import safe_execution
 from log import logger
+from config import config
+
 
 EXTENSION_TO_MIME = {
     ".pdf": {"application/pdf"},
@@ -13,7 +15,30 @@ EXTENSION_TO_MIME = {
     ".doc": {"application/msword", "application/octet-stream", "application/x-ole-storage"}
 }
 
-@safe_execution(component="EXTENSION_VALIDATOR")
+base_dir=config["paths"]["watcher"]
+
+def is_valid(path):
+    return bool(validate_path(path)) and bool(is_valid_extension(path))
+
+
+@safe_execution(component="VALIDATOR")
+def validate_path(path, base_dir=None):
+    if base_dir is None:
+        base_dir = config["paths"]["watcher"]
+        
+    if not os.path.exists(path):
+        return False
+
+    if os.path.islink(path):
+        return False
+
+    real_path = os.path.realpath(path)
+    base_dir = os.path.realpath(base_dir)
+
+    return real_path.startswith(base_dir + os.sep)
+
+
+@safe_execution(component="VALIDATOR")
 def is_valid_extension(path):
     if not os.path.isfile(path):
         logger.error(f"File does not exist: {path}")

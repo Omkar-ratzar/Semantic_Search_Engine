@@ -6,7 +6,7 @@ from db_connection import upsert_file, mark_modified, mark_deleted, move_file, m
 from log import logger
 from config import config
 from error_decorator import safe_execution
-from extension_validator import is_valid_extension
+from Validator import is_valid
 
 
 
@@ -66,7 +66,7 @@ class MyHandler(FileSystemEventHandler):
             logger.warning(f"File not ready: {path}")
             return
         upsert_file(path) #need to upsert file first so aa row will be created to mark as invalid
-        if(is_valid_extension(path)):
+        if(is_valid(path)):
             if path.lower().endswith((".jpg", ".jpeg", ".png")):
                 file_id = get_file_id_by_path(path)
                 upsert_image_metadata(file_id, path, None, None, status="NEW")
@@ -83,7 +83,7 @@ class MyHandler(FileSystemEventHandler):
         path = normalize_path(path)
         logger.info("File modified: "+path)
         print("File modified: "+path)
-        if(is_valid_extension(path)):
+        if(is_valid(path)):
             mark_modified(path)
             if path.lower().endswith((".jpg", ".jpeg", ".png")):
                 file_id = get_file_id_by_path(path)
@@ -112,7 +112,7 @@ class MyHandler(FileSystemEventHandler):
         src_path = normalize_path(src_path)
         dest_path = normalize_path(dest_path)
         if os.path.dirname(src_path) == os.path.dirname(dest_path):
-            if(is_valid_extension(dest_path)):
+            if(is_valid(dest_path)):
                 mark_renamed(src_path,dest_path)
                 logger.info("File renamed: "+dest_path)
                 print("File renamed: "+dest_path)
