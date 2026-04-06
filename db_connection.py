@@ -466,3 +466,43 @@ def mark_processed_metadata(file_id):
                 cursor.close()
             if conn:
                 conn.close()
+
+def mark_invalid(path):
+    for attempt in range(MAX_RETRIES):
+        conn = None
+        cursor = None
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            query = """
+            UPDATE all_files
+            SET file_status = 'INVALID',
+                last_modified = %s
+            WHERE file_path = %s
+            """
+
+            cursor.execute(query, (datetime.now(), path))
+            conn.commit()
+
+            logger.info(f"mark_invalid success: {path}")
+            return
+
+        except Exception as e:
+            if conn:
+                conn.rollback()
+
+            logger.error(
+                f"mark_invalid failed (attempt {attempt+1}): {path} | error: {e}"
+            )
+
+            if attempt == MAX_RETRIES - 1:
+                raise
+
+            time.sleep(1 * (attempt + 1))
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()

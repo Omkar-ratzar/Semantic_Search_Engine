@@ -7,3 +7,4 @@ Pillow==12.2.0
 python_pptx==1.0.2
 sentence_transformers==5.1.2
 watchdog==6.0.0
+python-magic-bin
