@@ -5,6 +5,7 @@ import os
 from db_connection import upsert_file, mark_modified, mark_deleted, move_file, mark_renamed,get_file_id_by_path,upsert_image_metadata
 from log import logger
 from config import config
+from error_decorator import safe_execution
 
 watcher_path=config["paths"]["watcher"]
 
@@ -30,6 +31,7 @@ class MyHandler(FileSystemEventHandler):
             self.handle_moved(event.src_path, event.dest_path)
 
     # ---- Your logic goes here ----
+    @safe_execution(component="WATCHER",log_args=True)
     def handle_created(self, path):
         logger.info("File added: "+path)
         path = normalize_path(path)
@@ -40,6 +42,7 @@ class MyHandler(FileSystemEventHandler):
             upsert_image_metadata(file_id, path, None, None, status="NEW")
 
 
+    @safe_execution(component="WATCHER",log_args=True)
     def handle_modified(self, path):
         path = normalize_path(path)
         logger.info("File modified: "+path)
@@ -50,6 +53,7 @@ class MyHandler(FileSystemEventHandler):
             upsert_image_metadata(file_id, path, None, None, status="NEW")
 
 
+    @safe_execution(component="WATCHER",log_args=True)
     def handle_deleted(self, path):
         path = normalize_path(path)
         logger.info("File deleted: "+path)
@@ -60,6 +64,7 @@ class MyHandler(FileSystemEventHandler):
             if(file_id):
                 upsert_image_metadata(file_id, path, None, None, status="DELETED")
 
+    @safe_execution(component="WATCHER",log_args=True)
     def handle_moved(self, src_path, dest_path):
         src_path = normalize_path(src_path)
         dest_path = normalize_path(dest_path)
@@ -73,12 +78,13 @@ class MyHandler(FileSystemEventHandler):
             print("File moved elsewhere: "+dest_path)
 
 
+@safe_execution(component="WATCHER",log_args=True)
 def start_watcher(path="."):
     event_handler = MyHandler()
     observer = Observer()
     observer.schedule(event_handler, path=path, recursive=False)
     observer.start()
-    print(f"Watching directory: {path}")
+    print(f"[+] Watching directory: {path}")
     logger.info("Started watcher in:"+(path))
     try:
         while True:

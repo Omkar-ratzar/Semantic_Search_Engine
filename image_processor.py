@@ -7,10 +7,11 @@ from db_connection import upsert_image_metadata
 import time
 from log import logger
 from config import config
+from error_decorator import safe_execution
 
 image_batch_limit = config["batch"]["image_processing_batch_size"]
 
-
+@safe_execution(component="IMAGE_PROCESSOR")
 def process_batch():
     files = get_new_images(limit=image_batch_limit)
 
@@ -29,6 +30,7 @@ def process_batch():
 
 
 if __name__ == "__main__":
+    print("[+] Started the image processor")
     while True:
         process_batch()
         time.sleep(2)

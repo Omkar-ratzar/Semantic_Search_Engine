@@ -10,7 +10,7 @@ from config import config
 import os
 import fitz  # PyMuPDF
 from pptx import Presentation
-
+from error_decorator import safe_execution
 
 
 path=config["paths"]["data"]
@@ -30,6 +30,7 @@ def normalize_path(path):
     return os.path.abspath(path)
 
 #for images
+@safe_execution(component="EXTRACTOR",log_args=True)
 def extract_img(path):
     path=normalize_path(path)
     # description_text=str(extract_image(path))
@@ -43,6 +44,7 @@ def extract_img(path):
 
 
 #for docx
+@safe_execution(component="EXTRACTOR",log_args=True)
 def extract_docx(path):
     text = docx2txt.process(path)
     mark_processed(normalize_path(path))
@@ -50,6 +52,7 @@ def extract_docx(path):
     return (" ".join(text.split()))
 
 #for pdfs
+@safe_execution(component="EXTRACTOR",log_args=True)
 def extract_pdf(path):
     doc = fitz.open(path)
     text = ""
@@ -60,6 +63,7 @@ def extract_pdf(path):
     return text
 
 #for pptz
+@safe_execution(component="EXTRACTOR",log_args=True)
 def extract_pptx(path):
     prs = Presentation(path)
     text = []
@@ -78,6 +82,7 @@ def extract_pptx(path):
 
 
 #word based chonking
+@safe_execution(component="CHUNKER")
 def chunk_text(text, chunk_size, overlap):
     words = text.split()
     chunks = []
@@ -92,6 +97,7 @@ def chunk_text(text, chunk_size, overlap):
 
 
 #building the pipeline
+@safe_execution(component="PIPELINE", rethrow=True)
 def build_pipeline():
     logger.info("Building the pipeline")
     doc_id = 0
@@ -152,9 +158,9 @@ def build_pipeline():
 
 
 
-
+@safe_execution(component="PIPELINE",rethrow=True)
 def load_pipeline():
-    print("Loading cached data...")
+    print("[+] Loading cached data...")
     logger.info("Loading saved embeddings")
     embeddings = np.load(EMB_PATH)
 
@@ -169,6 +175,7 @@ def load_pipeline():
 
 
 # Search function based on chunks
+@safe_execution(component="SEARCH", default_return=[])
 def search(query, model, embeddings, chunker, top_k=5):
     q = model.encode([query],show_progress_bar=False)[0]
     q = q / np.linalg.norm(q)
@@ -187,6 +194,7 @@ def search(query, model, embeddings, chunker, top_k=5):
     return results
 
 #search function based on docs
+@safe_execution(component="SEARCH", default_return=[],log_args=True)
 def search_docs(query, model, embeddings, chunker, top_k):
     # Embed query
     q = model.encode([query],show_progress_bar=False)[0]

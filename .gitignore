@@ -7,3 +7,6 @@ data/
 *.log
 *.env
 db_connection_old.py
+temp.py
+tempCodeRunnerFile.py
+__pycache__
