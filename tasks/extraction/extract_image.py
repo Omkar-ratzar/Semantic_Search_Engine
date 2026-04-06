@@ -1,24 +1,8 @@
 import ollama
-from log import logger
-from config import config
-def sanitize_output(text):
-    if len(text) > 2000:
-        return None
-    blacklist = ["ignore previous", "follow these instructions", "system prompt","follow instructions"]
-    for word in blacklist:
-        if word in text.lower():
-            return None
-    return text
-
-def validate_output(text):
-    required_sections = [
-        "[SCENE TYPE]:",
-        "[PRIMARY SUBJECTS]:",
-    ]
-
-    present = sum(1 for sec in required_sections if sec in text)
-
-    return present >= 1
+from core.log import logger
+from config.config import config
+from tasks.processing.sanitize import sanitize_image_output as sanitize_output
+from tasks.processing.validate import is_valid_image_output as validate_output
 
 def extract_image(path):
 
@@ -95,4 +79,3 @@ def extract_image(path):
 
     return output
 
-# print(extract_image("C:\\Users\\Fylakas\\Pictures\\test.jpg"))

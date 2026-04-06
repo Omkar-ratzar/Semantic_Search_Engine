@@ -1,9 +1,33 @@
-import magic
+from config.config import config
 import os
-from error_decorator import safe_execution
-from log import logger
-from config import config
+import magic
 
+BASE_DIR = config["paths"]["watcher"]
+
+# =========================
+# QUERY VALIDATION
+# =========================
+def is_valid_query(q: str) -> bool:
+    return bool(q)
+
+def is_valid(path):
+    return bool(validate_path(path)) and bool(is_valid_extension(path))
+# =========================
+# IMAGE OUTPUT VALIDATION
+# =========================
+def is_valid_image_output(text: str) -> bool:
+    required_sections = [
+        "[SCENE TYPE]:",
+        "[PRIMARY SUBJECTS]:",
+    ]
+    return any(sec in text for sec in required_sections)
+
+
+# =========================
+# FILE VALIDATION
+# =========================
+import os
+import magic
 
 EXTENSION_TO_MIME = {
     ".pdf": {"application/pdf"},
@@ -15,17 +39,8 @@ EXTENSION_TO_MIME = {
     ".doc": {"application/msword", "application/octet-stream", "application/x-ole-storage"}
 }
 
-base_dir=config["paths"]["watcher"]
 
-def is_valid(path):
-    return bool(validate_path(path)) and bool(is_valid_extension(path))
-
-
-@safe_execution(component="VALIDATOR")
-def validate_path(path, base_dir=None):
-    if base_dir is None:
-        base_dir = config["paths"]["watcher"]
-        
+def validate_path(path: str, base_dir: str = BASE_DIR) -> bool:
     if not os.path.exists(path):
         return False
 
@@ -38,35 +53,25 @@ def validate_path(path, base_dir=None):
     return real_path.startswith(base_dir + os.sep)
 
 
-@safe_execution(component="VALIDATOR")
-def is_valid_extension(path):
+def is_valid_extension(path: str) -> bool:
     if not os.path.isfile(path):
-        logger.error(f"File does not exist: {path}")
         return False
 
     ext = os.path.splitext(path)[1].lower()
-
     if not ext:
-        logger.error(f"Missing file extension: {path}")
         return False
 
     expected_mimes = EXTENSION_TO_MIME.get(ext)
     if not expected_mimes:
-        logger.error(f"Unsupported extension: {ext} | {path}")
         return False
 
     try:
         actual_mime = magic.from_file(path, mime=True)
-    except Exception as e:
-        logger.error(f"MIME detection failed: {path} | {e}")
+    except:
         return False
 
-    if actual_mime not in expected_mimes:
-        logger.warning(
-            f"MIME mismatch: expected {expected_mimes}, got {actual_mime} | {path}"
-        )
-        return False
+    return actual_mime in expected_mimes
 
-    return True
 
-# print(is_valid_extension("./data/computer.docx"))
+def is_valid_file(path: str, base_dir: str) -> bool:
+    return validate_path(path, base_dir) and is_valid_extension(path)

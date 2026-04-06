@@ -1,0 +1,34 @@
+model:
+  embedding: "BAAI/bge-small-en-v1.5" #
+  image_llm: "minicpm-v" #
+
+llm:
+  temperature: 0 #
+  top_p: 0.3 #
+
+chunking:
+  chunk_size: 400 #
+  overlap: 100 #
+
+batch:
+  image_processing_batch_size: 10 #
+  file_processing_batch_size: 100 #
+  embedding_batch_size: 32 #
+
+device:
+  type: "cuda" #
+
+paths:
+  data: "data"
+  embeddings: "embeddings.npy"
+  chunks: "chunks.json"
+  watcher: "E:\\Coding\\search_sample\\data" #
+
+processing:
+  max_retries: 3
+
+embedding:
+  show_progress: True #
+
+search:
+  retrieve_queries : 5
