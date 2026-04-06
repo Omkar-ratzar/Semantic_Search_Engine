@@ -29,6 +29,28 @@ retrieve_queries=config["search"]["retrieve_queries"]
 def normalize_path(path):
     return os.path.abspath(path)
 
+
+def sanitize_query(query, max_length=500):
+    if not query:
+        return None
+
+    # strip whitespace
+    query = query.strip()
+
+    # remove excessive whitespace
+    query = " ".join(query.split())
+
+    # limit length
+    if len(query) > max_length:
+        query = query[:max_length]
+
+    # reject empty after cleaning
+    if not query:
+        return None
+
+    return query
+
+
 #for images
 @safe_execution(component="EXTRACTOR",log_args=True)
 def extract_img(path):
@@ -177,7 +199,11 @@ def load_pipeline():
 # Search function based on chunks
 @safe_execution(component="SEARCH", default_return=[])
 def search(query, model, embeddings, chunker, top_k=5):
-    q = model.encode([query],show_progress_bar=False)[0]
+    q = sanitize_query(query)
+    if not q:
+        logger.warning("Empty/invalid query rejected")
+        return []
+    q = model.encode([q],show_progress_bar=False)[0]
     q = q / np.linalg.norm(q)
 
     scores = embeddings @ q
@@ -190,14 +216,18 @@ def search(query, model, embeddings, chunker, top_k=5):
             "score": float(scores[i]),
             "text": chunker[i]["text"][:200]
             })
-    logger.info("Chunk search successful. Query:"+query)
+    logger.info("Chunk search successful. Query:"+q)
     return results
 
 #search function based on docs
 @safe_execution(component="SEARCH", default_return=[],log_args=True)
 def search_docs(query, model, embeddings, chunker, top_k):
+    q = sanitize_query(query)
+    if not q:
+        logger.warning("Empty/invalid query rejected")
+        return []
     # Embed query
-    q = model.encode([query],show_progress_bar=False)[0]
+    q = model.encode([q],show_progress_bar=False)[0]
     q = q / np.linalg.norm(q)
 
     # Compute similarity
@@ -229,7 +259,7 @@ def search_docs(query, model, embeddings, chunker, top_k):
             # "snippet": chunker[idx]["text"][:]
         })
 
-    logger.info("File search successful. Query:"+query)
+    logger.info("File search successful. Query:"+q)
     return results
 
 
