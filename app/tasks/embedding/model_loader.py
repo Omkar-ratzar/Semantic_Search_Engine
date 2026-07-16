@@ -9,6 +9,7 @@ def get_model():
     if _model is None:
         _model = SentenceTransformer(
             config["model"]["embedding"],
+            local_files_only=True,
             device=config["device"]["type"] if torch.cuda.is_available() else "cpu"
         )
     return _model

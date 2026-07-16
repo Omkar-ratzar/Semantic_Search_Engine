@@ -105,9 +105,19 @@
       });
 
       const data = await res.json();
+
+      const results = data.results;
+      const metrics = data.metrics;
+      const apiLatency = metrics.api_latency_ms;
+      const embedding = metrics.embedding_ms;
+      const vectorSearch = metrics.vector_search_ms;
+      const formatting = metrics.formatting_ms;
+      const total = metrics.total_ms;
+      const topK = metrics.top_k;
+      const returned = metrics.returned;
       loadingState.style.display = 'none';
 
-      if (!Array.isArray(data) || data.length === 0) {
+      if (!Array.isArray(results) || results.length === 0) {
         resultsList.innerHTML = `
           <div class="empty-state" style="padding:40px;">
             <div class="empty-state-icon">📭</div>
@@ -117,11 +127,38 @@
         `;
         return;
       }
+      let html = `
+      <div class="results-header">
 
-      // Render results header
-      let html = `<div class="results-header">${data.length} result${data.length > 1 ? 's' : ''} found</div>`;
+          <div class="results-summary">
+              <strong>${returned} result${returned !== 1 ? 's' : ''} found</strong>
+          </div>
 
-      data.forEach((r, i) => {
+          <div class="metrics-badges">
+              <span class="metric-badge api">
+                  ⚡ ${apiLatency} ms
+              </span>
+
+              <span class="metric-badge embed">
+                  🧠 ${embedding} ms
+              </span>
+
+              <span class="metric-badge search">
+                  🔎 ${vectorSearch} ms
+              </span>
+
+              <span class="metric-badge total">
+                  ⏱ ${total} ms
+              </span>
+
+              <span class="metric-badge topk">
+                  📄 Top ${topK}
+              </span>
+          </div>
+
+      </div>
+      `;
+      results.forEach((r, i) => {
         const ext = r.file ? r.file.split('.').pop().toUpperCase() : '?';
         const scorePercent = (r.score * 100).toFixed(1);
         const icon = getFileIcon(ext);

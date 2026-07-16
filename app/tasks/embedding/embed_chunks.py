@@ -12,13 +12,12 @@ show_progress = config["embedding"]["show_progress"]
 def embed_chunks(texts: list[str]) -> np.ndarray:
     if not texts:
         return np.array([])
-
     model = get_model()
+
 
     vectors = model.encode(
         texts,
         batch_size=batch_size,
         show_progress_bar=show_progress
     )
-
     return normalize(vectors)
